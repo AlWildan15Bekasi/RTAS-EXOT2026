@@ -403,12 +403,32 @@
 
         // --- CORE FUNCTIONS ---
 
+        // Helper Function untuk mengubah 1899-12-30T05:23:51.000Z menjadi jam yang rapi
+        function formatTimeDisplay(timeStr) {
+            if (!timeStr || timeStr === '-') return '--:--:--';
+            
+            const str = String(timeStr);
+            // Cek apakah ini string ISO dari Google Sheets
+            if (str.includes('T') && str.includes('Z')) {
+                try {
+                    const d = new Date(str);
+                    // toLocaleTimeString otomatis menyesuaikan ke format lokal (WIB) yang cantik
+                    const formatted = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                    return formatted.replace(/\./g, ':'); // Ganti titik menjadi titik dua jika diperlukan
+                } catch (e) {
+                    // Fallback jika browser gagal memproses Date
+                    return str.split('T')[1].substring(0, 8);
+                }
+            }
+            return str;
+        }
+
         // Clock
         setInterval(() => {
             const now = new Date();
             const timeOpts = { hour: '2-digit', minute:'2-digit', second:'2-digit' };
             const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            document.getElementById('current-time').innerHTML = `<span class="font-bold text-exotBlue">${now.toLocaleTimeString('id-ID', timeOpts)}</span> &bull; ${now.toLocaleDateString('id-ID', dateOpts)}`;
+            document.getElementById('current-time').innerHTML = `<span class="font-bold text-exotBlue">${now.toLocaleTimeString('id-ID', timeOpts).replace(/\./g, ':')}</span> &bull; ${now.toLocaleDateString('id-ID', dateOpts)}`;
         }, 1000);
 
         // Fetch Data from Google Sheets API
@@ -439,7 +459,7 @@
                             session: row.Sesi_Ujian || '-',
                             interval: row.Interval_Waktu || '-',
                             status: rowStatus,
-                            time: row.Jam_Scan || '--:--:--',
+                            time: formatTimeDisplay(row.Jam_Scan), // <- Menggunakan Helper Disini
                             isLate: row.Keterangan_Waktu === 'Terlambat'
                         };
                     });
