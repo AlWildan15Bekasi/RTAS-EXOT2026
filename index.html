@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manajemen Panel Siswa - EXOT 2026</title>
+    
+    <!-- Google Fonts: Montserrat for Headings, Poppins for Body -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        exotBlue: '#2B55A4',
+                        exotCyan: '#00A9E2',
+                        exotGold: '#D4AF37',
+                        exotDark: '#0f172a',
+                        exotLight: '#f8fafc',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                        heading: ['Montserrat', 'sans-serif'],
+                    },
+                    animation: {
+                        'fade-in-up': 'fadeInUp 0.6s ease-out forwards',
+                        'blob': 'blob 7s infinite',
+                    },
+                    keyframes: {
+                        fadeInUp: {
+                            '0%': { opacity: '0', transform: 'translateY(20px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        blob: {
+                            '0%': { transform: 'translate(0px, 0px) scale(1)' },
+                            '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+                            '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+                            '100%': { transform: 'translate(0px, 0px) scale(1)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        /* Gradients & Glassmorphism */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .tab-active { 
+             border-bottom-color: #2B55A4 !important; 
+             color: #2B55A4 !important; 
+             font-weight: 600; 
+             background: linear-gradient(to top, rgba(43,85,164,0.05) 0%, transparent 100%);
+        }
+        
+        /* Smooth UI transitions */
+        .ui-element { transition: all 0.3s ease; }
+        .ui-element:hover { transform: translateY(-3px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1); }
+        
+        .delay-100 { animation-delay: 100ms; }
+        .delay-200 { animation-delay: 200ms; }
+        .delay-300 { animation-delay: 300ms; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased h-screen overflow-hidden flex flex-col font-sans relative">
+
+    <!-- Background Decorative Elements -->
+    <div class="fixed inset-0 z-0 pointer-events-none hidden overflow-hidden bg-slate-50" id="dash-bg">
+        <div class="absolute -top-[10%] -right-[5%] w-[40vw] h-[40vw] max-w-xl max-h-xl bg-gradient-to-br from-exotGold via-yellow-200 to-exotCyan rounded-full mix-blend-multiply filter blur-[100px] opacity-30 animate-blob"></div>
+        <div class="absolute top-[30%] -left-[10%] w-[35vw] h-[35vw] max-w-lg max-h-lg bg-gradient-to-tr from-exotCyan via-blue-300 to-exotBlue rounded-full mix-blend-multiply filter blur-[100px] opacity-20 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-[15%] right-[15%] w-[45vw] h-[45vw] max-w-2xl max-h-2xl bg-gradient-to-tl from-exotGold via-amber-200 to-exotCyan rounded-full mix-blend-multiply filter blur-[120px] opacity-25 animate-blob animation-delay-4000"></div>
+
+        <svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id="gradGoldCyan" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stop-color="#D4AF37" stop-opacity="0.35"/>
+                    <stop offset="50%" stop-color="#00A9E2" stop-opacity="0.15"/>
+                    <stop offset="100%" stop-color="#2B55A4" stop-opacity="0.05"/>
+                </linearGradient>
+                <linearGradient id="gradCyanGold" x1="100%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#00A9E2" stop-opacity="0.25"/>
+                    <stop offset="100%" stop-color="#D4AF37" stop-opacity="0.15"/>
+                </linearGradient>
+                <linearGradient id="strokeLine" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stop-color="#2B55A4" stop-opacity="0"/>
+                    <stop offset="40%" stop-color="#D4AF37" stop-opacity="0.6"/>
+                    <stop offset="60%" stop-color="#00A9E2" stop-opacity="0.6"/>
+                    <stop offset="100%" stop-color="#00A9E2" stop-opacity="0"/>
+                </linearGradient>
+            </defs>
+            
+            <path d="M 65vw 0 C 80vw 30vh, 100vw 20vh, 100vw 55vh L 100vw 0 Z" fill="url(#gradGoldCyan)" />
+            <path d="M 0 35vh C 25vw 55vh, 15vw 85vh, 40vw 100vh L 0 100vh Z" fill="url(#gradCyanGold)" />
+            
+            <path d="M -10vw 15vh C 30vw 45vh, 60vw -15vh, 110vw 35vh" fill="none" stroke="url(#strokeLine)" stroke-width="2" opacity="0.7"/>
+            <path d="M -10vw 18vh C 30vw 48vh, 60vw -12vh, 110vw 38vh" fill="none" stroke="url(#gradCyanGold)" stroke-width="0.8" opacity="0.5"/>
+            <path d="M -10vw 85vh C 40vw 100vh, 60vw 65vh, 110vw 90vh" fill="none" stroke="url(#strokeLine)" stroke-width="2.5" opacity="0.5" stroke-dasharray="15 8"/>
+            <path d="M -10vw 82vh C 40vw 97vh, 60vw 62vh, 110vw 87vh" fill="none" stroke="#D4AF37" stroke-width="1" opacity="0.3"/>
+        </svg>
+
+        <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAiIGhlaWdodD0iMjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGNpcmNsZSBjeD0iMiIgY3k9IjIiIHI9IjEiIGZpbGw9IiM5NGEzYjgiIG9wYWNpdHk9IjAuMSIvPjwvc3ZnPg==')] opacity-50"></div>
+    </div>
+
+    <!-- ==================== LOGIN SCREEN ==================== -->
+    <div id="login-screen" class="absolute inset-0 z-50 flex items-center justify-center bg-slate-900 overflow-hidden">
+        <div class="absolute top-0 -left-4 w-72 h-72 bg-exotBlue rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob"></div>
+        <div class="absolute top-0 -right-4 w-72 h-72 bg-exotCyan rounded-full mix-blend-multiply filter blur-2xl opacity-70 animate-blob animation-delay-2000"></div>
+        <div class="absolute -bottom-8 left-20 w-72 h-72 bg-exotGold rounded-full mix-blend-multiply filter blur-2xl opacity-40 animate-blob animation-delay-4000"></div>
+
+        <div class="glass-card p-10 rounded-[2rem] shadow-2xl w-full max-w-md relative z-10 border-t-4 border-t-exotGold animate-fade-in-up">
+            <div class="text-center mb-10">
+                <h1 class="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-exotBlue to-exotCyan tracking-tight mb-2 font-heading">
+                    EXOT <span class="text-exotGold">26</span>
+                </h1>
+                <p class="text-sm text-slate-500 font-medium tracking-widest uppercase">Inspiring Excellence</p>
+                <div class="mt-4 px-5 py-1.5 bg-slate-100 text-exotBlue rounded-full text-xs font-bold inline-block border border-slate-200 shadow-sm">
+                    Al-Wildan Islamic School 15
+                </div>
+            </div>
+            
+            <h2 class="text-2xl font-bold text-slate-800 mb-6 text-center font-heading">Panel Kehadiran Siswa</h2>
+            
+            <form id="login-form" onsubmit="handleLogin(event)">
+                <div class="mb-5 relative group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-exotBlue transition-colors">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <input class="w-full py-3.5 pl-12 pr-4 bg-white/50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-exotBlue focus:border-transparent focus:bg-white transition-all shadow-inner" id="username" type="text" placeholder="Username" required>
+                </div>
+                <div class="mb-8 relative group">
+                    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-exotBlue transition-colors">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <input class="w-full py-3.5 pl-12 pr-4 bg-white/50 border border-slate-200 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-exotBlue focus:border-transparent focus:bg-white transition-all shadow-inner" id="password" type="password" placeholder="Password" required>
+                </div>
+                <button id="btn-login" class="w-full bg-gradient-to-r from-exotBlue to-exotCyan hover:from-blue-700 hover:to-blue-500 text-white font-bold py-3.5 px-4 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-300 transition-all transform hover:-translate-y-1 shadow-lg shadow-exotBlue/40 flex justify-center items-center gap-2 disabled:opacity-70 disabled:hover:translate-y-0" type="submit">
+                    <span>Masuk Panel</span>
+                    <i class="fa-solid fa-arrow-right-to-bracket"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MAIN DASHBOARD ==================== -->
+    <div id="main-app" class="hidden flex-1 flex flex-col h-screen relative z-10">
+        
+        <!-- Premium Navbar -->
+        <nav class="bg-white/80 backdrop-blur-md sticky top-0 z-40 border-b border-slate-200 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-20">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-exotBlue to-exotCyan flex items-center justify-center text-white font-black font-heading text-xl shadow-md">
+                            E
+                        </div>
+                        <div>
+                            <span class="text-2xl font-black font-heading text-slate-800 tracking-tight">EXOT <span class="text-exotCyan">2026</span></span>
+                            <div class="text-[10px] uppercase font-bold text-exotGold tracking-wider mt-[-4px]">Live Dashboard Siswa</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-6">
+                        <div class="text-right hidden md:block">
+                            <!-- Admin Name Element -->
+                            <p id="admin-name" class="text-sm font-bold text-slate-800">Administrator</p>
+                            <p id="current-time" class="text-xs text-slate-500 font-medium"></p>
+                        </div>
+                        <div class="h-10 w-px bg-slate-200 hidden md:block"></div>
+                        <button onclick="handleLogout()" class="group flex items-center gap-2 text-slate-500 hover:text-red-500 transition-colors bg-slate-50 hover:bg-red-50 px-3 py-2 rounded-lg border border-slate-100">
+                            <i class="fa-solid fa-power-off"></i>
+                            <span class="text-sm font-semibold hidden sm:inline">Logout</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content Layout -->
+        <div class="flex-1 overflow-hidden flex flex-col max-w-7xl mx-auto w-full">
+            
+            <!-- Beautiful Tabs -->
+            <div class="px-4 sm:px-6 lg:px-8 pt-6 pb-2">
+                <div class="flex space-x-2 border-b border-slate-200">
+                    <button onclick="switchTab('home')" id="tab-btn-home" class="py-3 px-6 rounded-t-xl text-slate-500 hover:text-exotBlue font-semibold text-sm transition-all tab-active flex items-center gap-2">
+                        <i class="fa-solid fa-chart-line"></i> Ringkasan
+                    </button>
+                    <button onclick="switchTab('attendance')" id="tab-btn-attendance" class="py-3 px-6 rounded-t-xl border-b-2 border-transparent text-slate-500 hover:text-exotBlue font-semibold text-sm transition-all flex items-center gap-2">
+                        <i class="fa-solid fa-satellite-dish animate-pulse text-exotGold hidden" id="live-icon"></i>
+                        <i class="fa-solid fa-list-check" id="list-icon"></i> Data Kehadiran
+                    </button>
+                </div>
+            </div>
+
+            <!-- Scrollable Content Area -->
+            <div class="flex-1 overflow-y-auto p-4 sm:p-6 lg:px-8 pb-24">
+                
+                <!-- TAB: HOME -->
+                <div id="tab-home" class="space-y-8 block">
+                    
+                    <!-- Stats Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Total -->
+                        <div class="ui-element bg-white rounded-2xl p-6 border border-slate-100 relative overflow-hidden group opacity-0 animate-fade-in-up">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-slate-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-500 mb-1 uppercase tracking-wider">Total Siswa</p>
+                                    <h3 id="stat-total" class="text-4xl font-black text-slate-800 font-heading">0</h3>
+                                </div>
+                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 text-slate-600 flex items-center justify-center text-2xl shadow-inner border border-white">
+                                    <i class="fa-solid fa-users"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Hadir -->
+                        <div class="ui-element bg-white rounded-2xl p-6 border border-slate-100 relative overflow-hidden group opacity-0 animate-fade-in-up delay-100">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-emerald-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-500 mb-1 uppercase tracking-wider">Sudah Hadir</p>
+                                    <h3 id="stat-present" class="text-4xl font-black text-emerald-600 font-heading">0</h3>
+                                </div>
+                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-400 to-emerald-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-emerald-200">
+                                    <i class="fa-solid fa-user-check"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Belum Hadir -->
+                        <div class="ui-element bg-white rounded-2xl p-6 border border-slate-100 relative overflow-hidden group opacity-0 animate-fade-in-up delay-200">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-rose-50 rounded-bl-full -z-10 group-hover:scale-110 transition-transform"></div>
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <p class="text-sm font-semibold text-slate-500 mb-1 uppercase tracking-wider">Belum Hadir</p>
+                                    <h3 id="stat-absent" class="text-4xl font-black text-rose-600 font-heading">0</h3>
+                                </div>
+                                <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-400 to-rose-500 text-white flex items-center justify-center text-2xl shadow-lg shadow-rose-200">
+                                    <i class="fa-solid fa-user-clock"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- Pie Chart -->
+                        <div class="ui-element bg-white rounded-2xl shadow-sm border border-slate-100 p-6 lg:col-span-1 opacity-0 animate-fade-in-up delay-100">
+                            <div class="flex items-center justify-between mb-6">
+                                <h3 class="text-lg font-bold text-slate-800 font-heading">Rasio Kehadiran</h3>
+                                <div class="p-2 bg-slate-50 rounded-lg text-exotBlue"><i class="fa-solid fa-chart-pie"></i></div>
+                            </div>
+                            <div class="relative h-60 w-full flex items-center justify-center">
+                                <canvas id="genderChart"></canvas>
+                            </div>
+                        </div>
+
+                        <!-- Bar Chart -->
+                        <div class="ui-element bg-white rounded-2xl shadow-sm border border-slate-100 p-6 lg:col-span-2 opacity-0 animate-fade-in-up delay-200">
+                            <div class="flex items-center justify-between mb-6">
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800 font-heading">Ketepatan Waktu per Kelas</h3>
+                                    <p class="text-xs text-slate-500">Batas toleransi diambil dari Settings (Database)</p>
+                                </div>
+                                <div class="p-2 bg-slate-50 rounded-lg text-exotCyan"><i class="fa-solid fa-chart-column"></i></div>
+                            </div>
+                            <div class="relative h-60 w-full">
+                                <canvas id="classChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Table: Belum Hadir -->
+                    <div class="ui-element bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden opacity-0 animate-fade-in-up delay-300">
+                        <div class="bg-gradient-to-r from-rose-50 to-white px-6 py-5 border-b border-rose-100 flex justify-between items-center">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center">
+                                    <i class="fa-solid fa-hourglass-half"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-lg font-bold text-slate-800 font-heading">Menunggu Kehadiran</h3>
+                                    <p class="text-xs text-slate-500 font-medium">Daftar siswa yang belum check-in ke ruangan</p>
+                                </div>
+                            </div>
+                            <span class="bg-rose-100 text-rose-700 text-sm font-bold px-4 py-1.5 rounded-full shadow-sm border border-rose-200" id="badge-absent">0 Siswa</span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">No</th>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Siswa</th>
+                                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">NIS</th>
+                                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Kelas</th>
+                                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Sesi & Waktu</th>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Ruang Ujian</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-absent-body" class="bg-white divide-y divide-slate-100">
+                                    <!-- Rows generated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB: REAL-TIME ATTENDANCE -->
+                <div id="tab-attendance" class="hidden space-y-6">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden animate-fade-in-up">
+                        <div class="bg-gradient-to-r from-exotBlue to-exotCyan px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div class="flex items-center gap-3">
+                                <div class="w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm text-white flex items-center justify-center text-xl shadow-inner border border-white/30">
+                                    <i class="fa-solid fa-clipboard-check"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-xl font-bold text-white font-heading">Log Kehadiran Siswa</h3>
+                                    <p class="text-sm text-blue-100 font-medium">Diperbarui secara real-time dari scanner barcode</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Waktu Kehadiran</th>
+                                        <th scope="col" class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Nama Siswa</th>
+                                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+                                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Kelas</th>
+                                        <th scope="col" class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">Sesi & Ruang</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-present-body" class="bg-white divide-y divide-slate-100">
+                                    <!-- Rows generated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <!-- Empty State -->
+                        <div id="empty-state-present" class="hidden py-16 text-center">
+                            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-slate-50 mb-4 text-slate-300 shadow-inner">
+                                <i class="fa-solid fa-barcode text-4xl"></i>
+                            </div>
+                            <h4 class="text-lg font-bold text-slate-700 font-heading">Belum Ada Data</h4>
+                            <p class="text-slate-500 max-w-sm mx-auto mt-2">Menunggu hasil scan kartu siswa di pintu masuk. Data akan muncul di sini secara otomatis.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- SYNC INDICATOR -->
+        <div class="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-white/90 backdrop-blur border border-slate-200 px-4 py-2 rounded-full shadow-lg">
+            <div class="relative flex h-3 w-3">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </div>
+            <span class="text-xs font-bold text-slate-600">Terhubung ke Database</span>
+            <i class="fa-solid fa-arrows-rotate text-slate-400 text-xs ml-1" id="sync-icon"></i>
+        </div>
+
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // --- API URL DARI GOOGLE APPS SCRIPT ---
+        // Parameter ?type=siswa ditambahkan agar GAS mengambil sheet DataSiswa
+        const API_URL = 'https://script.google.com/macros/s/AKfycby8lMsDJQ8IuSsiMTPr3hzkjbp6fk9X-RTSGS817d8o2ejYSr0xlgLzeVZ9g2uS1eISoA/exec?type=siswa';
+        
+        let studentsData = [];
+        let genderChartInstance = null;
+        let classChartInstance = null;
+        
+        let lastPresentIds = new Set();
+        let isFirstLoad = true;
+        let fetchIntervalId = null;
+
+        Chart.defaults.font.family = "'Poppins', sans-serif";
+        Chart.defaults.color = '#64748b';
+
+        // --- CORE FUNCTIONS ---
+
+        // Clock
+        setInterval(() => {
+            const now = new Date();
+            const timeOpts = { hour: '2-digit', minute:'2-digit', second:'2-digit' };
+            const dateOpts = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            document.getElementById('current-time').innerHTML = `<span class="font-bold text-exotBlue">${now.toLocaleTimeString('id-ID', timeOpts)}</span> &bull; ${now.toLocaleDateString('id-ID', dateOpts)}`;
+        }, 1000);
+
+        // Fetch Data from Google Sheets API
+        async function fetchData() {
+            try {
+                const syncIcon = document.getElementById('sync-icon');
+                if(syncIcon) syncIcon.classList.add('fa-spin');
+
+                const response = await fetch(API_URL);
+                const result = await response.json();
+                
+                if(syncIcon) syncIcon.classList.remove('fa-spin');
+
+                if (result.status === 'success') {
+                    // Mapping data dari format Database ke format UI Siswa
+                    const newData = result.data.map(row => {
+                        let rowStatus = 'pending';
+                        if (row.Status_Kehadiran && row.Status_Kehadiran.toString().trim() !== '') {
+                            rowStatus = row.Status_Kehadiran.toString().toLowerCase();
+                        }
+                        
+                        return {
+                            id: row.ID_Siswa || row.NIS || '-',                 
+                            name: row.Nama_Siswa || '-',    
+                            gender: row.Gender || '-',
+                            class: row.Kelas || '-',         
+                            room: row.Ruang_Ujian || row.Ruang || '-',
+                            session: row.Sesi_Ujian || '-',
+                            interval: row.Interval_Waktu || '-',
+                            status: rowStatus,
+                            time: row.Jam_Scan || '--:--:--',
+                            isLate: row.Keterangan_Waktu === 'Terlambat'
+                        };
+                    });
+
+                    studentsData = newData;
+                    
+                    // Filter yang statusnya hadir
+                    const currentPresent = newData.filter(t => t.status === 'hadir');
+                    
+                    // Logika memunculkan pop-up hanya untuk ID yang BARU hadir
+                    if (!isFirstLoad) {
+                        currentPresent.forEach(student => {
+                            if (!lastPresentIds.has(student.id)) {
+                                showRealTimePopup(student);
+                            }
+                        });
+                    }
+                    
+                    // Simpan state ID hadir saat ini untuk perbandingan berikutnya
+                    lastPresentIds = new Set(currentPresent.map(t => t.id));
+                    isFirstLoad = false;
+
+                    // Update UI setelah state baru beres
+                    updateDashboard();
+                    if(!document.getElementById('tab-attendance').classList.contains('hidden')) {
+                        renderPresentTable();
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                const syncIcon = document.getElementById('sync-icon');
+                if(syncIcon) syncIcon.classList.remove('fa-spin');
+            }
+        }
+
+        // Login Handler dengan Fetch API
+        async function handleLogin(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login');
+            const originalContent = btn.innerHTML;
+            
+            const inputUsername = document.getElementById('username').value;
+            const inputPassword = document.getElementById('password').value;
+
+            // State Loading
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xl"></i> Memeriksa...';
+            btn.disabled = true;
+            
+            try {
+                // Request Login ke Apps Script
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                    body: JSON.stringify({ 
+                        action: 'login',
+                        username: inputUsername,
+                        password: inputPassword 
+                    })
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    // Update nama Admin dari database
+                    const adminNameText = result.data.nama_lengkap || 'Administrator';
+                    document.getElementById('admin-name').innerText = adminNameText;
+
+                    document.getElementById('login-screen').classList.add('hidden');
+                    document.getElementById('main-app').classList.remove('hidden');
+                    document.getElementById('dash-bg').classList.remove('hidden');
+                    
+                    Swal.fire({
+                        toast: true, position: 'top-end', icon: 'success',
+                        title: 'Autentikasi Berhasil', text: `Selamat datang, ${adminNameText}`,
+                        showConfirmButton: false, timer: 3000,
+                        customClass: { popup: 'rounded-xl shadow-xl border-l-4 border-emerald-500' }
+                    });
+
+                    initDashboard();
+                    fetchData(); // Fetch pertama kali
+                    
+                    // Mulai Interval Polling setiap 5 Detik
+                    fetchIntervalId = setInterval(fetchData, 5000); 
+
+                } else {
+                    // Gagal Login (Salah Sandi)
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Login Gagal',
+                        text: result.message || 'Username atau Password salah!',
+                        confirmButtonColor: '#ef4444',
+                        customClass: { popup: 'rounded-2xl' }
+                    });
+                }
+            } catch (error) {
+                console.error('Login Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Koneksi Terputus',
+                    text: 'Gagal terhubung ke database. Pastikan internet aktif.',
+                    confirmButtonColor: '#ef4444',
+                    customClass: { popup: 'rounded-2xl' }
+                });
+            } finally {
+                // Kembalikan tombol ke semula
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+
+        // Logout
+        function handleLogout() {
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('main-app').classList.add('hidden');
+            document.getElementById('dash-bg').classList.add('hidden');
+            
+            // Kosongkan form login
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+
+            switchTab('home');
+            
+            // Hentikan Polling saat logout
+            if(fetchIntervalId) {
+                clearInterval(fetchIntervalId);
+            }
+            isFirstLoad = true; // reset state
+        }
+
+        // Tabs
+        function switchTab(tabName) {
+            document.getElementById('tab-btn-home').classList.remove('tab-active');
+            document.getElementById('tab-btn-attendance').classList.remove('tab-active');
+            document.getElementById('tab-home').classList.add('hidden');
+            document.getElementById('tab-attendance').classList.add('hidden');
+            
+            if(tabName === 'attendance') {
+                document.getElementById('live-icon').classList.remove('hidden');
+                document.getElementById('list-icon').classList.add('hidden');
+            } else {
+                document.getElementById('live-icon').classList.add('hidden');
+                document.getElementById('list-icon').classList.remove('hidden');
+            }
+
+            const activeBtn = document.getElementById(`tab-btn-${tabName}`);
+            activeBtn.classList.add('tab-active');
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            if(tabName === 'attendance') {
+                renderPresentTable();
+            } else {
+                updateDashboard();
+            }
+        }
+
+        // --- DASHBOARD RENDERING ---
+
+        function initDashboard() {
+            initCharts();
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const total = studentsData.length;
+            const present = studentsData.filter(t => t.status === 'hadir');
+            // Menangkap yang pending atau yg blank statusnya
+            const absent = studentsData.filter(t => t.status === 'pending' || t.status === '');
+
+            // Counter animation
+            animateValue("stat-present", parseInt(document.getElementById('stat-present').innerText) || 0, present.length, 500);
+            animateValue("stat-absent", parseInt(document.getElementById('stat-absent').innerText) || 0, absent.length, 500);
+            document.getElementById('stat-total').innerText = total;
+            
+            document.getElementById('badge-absent').innerText = `${absent.length} Siswa`;
+
+            renderAbsentTable(absent);
+            updateChartsData(present);
+        }
+
+        function animateValue(id, start, end, duration) {
+            if (start === end) return;
+            const obj = document.getElementById(id);
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                obj.innerHTML = Math.floor(progress * (end - start) + start);
+                if (progress < 1) window.requestAnimationFrame(step);
+            };
+            window.requestAnimationFrame(step);
+        }
+
+        function renderAbsentTable(absentList) {
+            const tbody = document.getElementById('table-absent-body');
+            tbody.innerHTML = '';
+
+            if(absentList.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-slate-400 font-medium bg-slate-50"><i class="fa-regular fa-face-smile-beam text-3xl mb-2 text-emerald-400 block"></i> Alhamdulillah, semua siswa sudah hadir!</td></tr>`;
+                return;
+            }
+
+            absentList.forEach((student, index) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50 transition-colors group cursor-default';
+                
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-400 font-medium">${index + 1}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full ${student.gender === 'Ikhwan' || student.gender === 'Laki-laki' ? 'bg-blue-100 text-blue-600' : 'bg-pink-100 text-pink-600'} flex items-center justify-center font-bold text-sm shadow-inner">
+                                ${student.gender === 'Ikhwan' || student.gender === 'Laki-laki' ? 'L' : 'P'}
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-bold text-slate-800 group-hover:text-exotBlue transition-colors">${student.name}</div>
+                                <div class="text-xs text-slate-500">${student.gender}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-mono text-slate-600 font-medium">
+                        ${student.id}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-bold border border-indigo-100 text-xs">${student.class}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <div class="text-sm font-bold text-slate-700">${student.session}</div>
+                        <div class="text-[10px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded mt-1 inline-block"><i class="fa-regular fa-clock"></i> ${student.interval}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center gap-2 text-sm text-slate-600 font-bold bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 w-max">
+                            <i class="fa-solid fa-door-open text-slate-400"></i> ${student.room}
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderPresentTable() {
+            const presentList = studentsData.filter(t => t.status === 'hadir').sort((a,b) => (a.time > b.time ? -1 : 1));
+            const tbody = document.getElementById('table-present-body');
+            const emptyState = document.getElementById('empty-state-present');
+            
+            tbody.innerHTML = '';
+
+            if(presentList.length === 0) {
+                emptyState.classList.remove('hidden');
+                tbody.parentElement.classList.add('hidden');
+                return;
+            } else {
+                emptyState.classList.add('hidden');
+                tbody.parentElement.classList.remove('hidden');
+            }
+
+            presentList.forEach((student, index) => {
+                const tr = document.createElement('tr');
+                const isNew = index === 0; 
+                tr.className = `transition-all duration-1000 ${isNew ? 'bg-yellow-50/50' : 'hover:bg-slate-50'}`;
+                
+                if(isNew) {
+                    setTimeout(() => tr.classList.remove('bg-yellow-50/50'), 2000);
+                }
+
+                const statusBadge = student.isLate 
+                    ? `<span class="px-3 py-1 inline-flex text-xs font-bold rounded-lg bg-rose-100 text-rose-700 border border-rose-200 w-max mx-auto"><i class="fa-solid fa-circle-exclamation mr-1.5 mt-0.5"></i> Terlambat</span>`
+                    : `<span class="px-3 py-1 inline-flex text-xs font-bold rounded-lg bg-emerald-100 text-emerald-700 border border-emerald-200 w-max mx-auto"><i class="fa-solid fa-check-double mr-1.5 mt-0.5"></i> Tepat</span>`;
+
+                tr.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="inline-flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200">
+                            <i class="fa-regular fa-clock text-exotBlue"></i>
+                            <span class="text-sm font-bold text-slate-800 font-mono">${student.time}</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="text-sm font-bold text-slate-800">${student.name}</div>
+                        <div class="text-xs text-slate-500 font-mono">NIS: ${student.id}</div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">${statusBadge}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <span class="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-bold border border-indigo-100 text-xs">${student.class}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-center">
+                        <div class="text-xs font-bold text-slate-700 mb-1">${student.session}</div>
+                        <span class="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md font-bold border border-slate-200 shadow-sm text-xs"><i class="fa-solid fa-door-open mr-1 text-slate-400"></i> ${student.room}</span>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // --- CHARTS CONFIGURATION ---
+
+        function initCharts() {
+            const chartOptions = {
+                responsive: true, maintainAspectRatio: false,
+                plugins: {
+                    legend: { labels: { font: { family: "'Poppins', sans-serif" }, usePointStyle: true, boxWidth: 8 } },
+                    tooltip: { backgroundColor: 'rgba(15, 23, 42, 0.9)', titleFont: { family: "'Montserrat', sans-serif" }, padding: 12, cornerRadius: 8 }
+                }
+            };
+
+            const ctxGender = document.getElementById('genderChart').getContext('2d');
+            genderChartInstance = new Chart(ctxGender, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Siswa (L) Hadir', 'Siswi (P) Hadir', 'Belum Hadir'],
+                    datasets: [{
+                        data: [0, 0, 1], // Placeholder
+                        backgroundColor: ['#2B55A4', '#e879f9', '#f1f5f9'],
+                        hoverBackgroundColor: ['#1e3a8a', '#d946ef', '#e2e8f0'],
+                        borderWidth: 2, borderColor: '#ffffff',
+                        hoverOffset: 8
+                    }]
+                },
+                options: { ...chartOptions, cutout: '70%', plugins: { ...chartOptions.plugins, legend: { position: 'bottom' } } }
+            });
+
+            const ctxClass = document.getElementById('classChart').getContext('2d');
+            classChartInstance = new Chart(ctxClass, {
+                type: 'bar',
+                data: {
+                    labels: [],
+                    datasets: [
+                        { label: 'Tepat Waktu', backgroundColor: '#10b981', borderRadius: 4, data: [] },
+                        { label: 'Terlambat', backgroundColor: '#f43f5e', borderRadius: 4, data: [] }
+                    ]
+                },
+                options: {
+                    ...chartOptions,
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, border: { display: false }, grid: { color: '#f1f5f9' }, ticks: { stepSize: 1 } }
+                    }
+                }
+            });
+        }
+
+        function updateChartsData(presentList) {
+            if(!genderChartInstance || !classChartInstance) return;
+
+            const ikhwanHadir = presentList.filter(t => t.gender === 'Ikhwan' || t.gender === 'Laki-laki').length;
+            const akhwatHadir = presentList.filter(t => t.gender === 'Akhwat' || t.gender === 'Perempuan').length;
+            const belumHadir = studentsData.length - presentList.length;
+
+            genderChartInstance.data.datasets[0].data = [ikhwanHadir, akhwatHadir, belumHadir];
+            genderChartInstance.update();
+
+            // Kumpulkan kelas unik untuk chart batang
+            const classes = [...new Set(studentsData.map(t => t.class))].filter(c => c !== '-');
+            classChartInstance.data.labels = classes;
+            
+            const tepatData = [], telatData = [];
+            classes.forEach(cls => {
+                const clsPresents = presentList.filter(t => t.class === cls);
+                tepatData.push(clsPresents.filter(t => !t.isLate).length);
+                telatData.push(clsPresents.filter(t => t.isLate).length);
+            });
+
+            classChartInstance.data.datasets[0].data = tepatData;
+            classChartInstance.data.datasets[1].data = telatData;
+            classChartInstance.update();
+        }
+
+        // --- REAL-TIME POPUP MODAL ---
+
+        function showRealTimePopup(student) {
+            let statusBadge = student.isLate 
+                ? '<span class="bg-rose-100 text-rose-700 px-5 py-2 rounded-xl border border-rose-200 font-black flex items-center gap-2 shadow-sm"><i class="fa-solid fa-circle-exclamation text-lg"></i> TERLAMBAT</span>'
+                : '<span class="bg-emerald-100 text-emerald-700 px-5 py-2 rounded-xl border border-emerald-200 font-black flex items-center gap-2 shadow-sm"><i class="fa-solid fa-check-double text-lg"></i> TEPAT WAKTU</span>';
+
+            Swal.fire({
+                html: `
+                    <div class="text-center font-sans p-2">
+                        <div class="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-exotGold/10 border border-exotGold/30 text-yellow-700 text-xs font-bold tracking-widest uppercase mb-8 shadow-sm">
+                            <span class="relative flex h-3 w-3 mr-2">
+                                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-500 opacity-75"></span>
+                                <span class="relative inline-flex rounded-full h-3 w-3 bg-yellow-600"></span>
+                            </span>
+                            Data Siswa Masuk
+                        </div>
+                        
+                        <div class="flex flex-col items-center justify-center mb-8">
+                            <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-exotBlue to-exotCyan text-white flex items-center justify-center text-4xl font-black shadow-xl shadow-blue-200 mb-5 transform transition-transform hover:scale-105 border-4 border-white">
+                                ${student.name.charAt(0)}
+                            </div>
+                            <h4 class="font-black text-slate-800 text-3xl leading-tight font-heading mb-1">${student.name}</h4>
+                            <p class="text-lg text-slate-500 font-medium">Siswa &bull; Kelas ${student.class}</p>
+                            <p class="text-sm text-slate-400 font-mono mt-1">NIS: ${student.id}</p>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-8 text-left">
+                            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100 shadow-inner group hover:bg-slate-100 transition">
+                                <div class="text-sm text-slate-500 font-bold mb-1 uppercase tracking-wider text-[10px] flex justify-between">
+                                    <span>Ruang / Sesi</span>
+                                    <span class="text-exotGold">${student.interval}</span>
+                                </div>
+                                <div class="font-black text-slate-800 text-lg flex flex-col mt-2">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-exotGold/20 text-exotGold flex items-center justify-center shrink-0"><i class="fa-solid fa-door-open"></i></div>
+                                        <span class="leading-tight">${student.room} <br><span class="text-sm text-slate-500 font-bold">${student.session}</span></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-100 shadow-inner group hover:bg-slate-100 transition flex flex-col justify-center">
+                                <div class="text-sm text-slate-500 font-bold mb-2 uppercase tracking-wider text-[10px]">Waktu Hadir</div>
+                                <div class="font-black text-slate-800 text-xl flex items-center gap-3 font-mono">
+                                    <div class="w-8 h-8 rounded-full bg-exotBlue/10 text-exotBlue flex items-center justify-center shrink-0"><i class="fa-regular fa-clock"></i></div>
+                                    ${student.time}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-center mt-2">
+                            ${statusBadge}
+                        </div>
+                    </div>
+                `,
+                showConfirmButton: false, 
+                timer: 5000, 
+                timerProgressBar: true,
+                position: 'center', 
+                toast: false, 
+                width: '42em', 
+                backdrop: `
+                    rgba(15, 23, 42, 0.4)
+                    backdrop-filter: blur(4px)
+                `, 
+                customClass: { popup: 'rounded-[2.5rem] shadow-2xl border border-slate-100 p-6' },
+                didOpen: (toast) => {
+                    toast.addEventListener('mouseenter', Swal.stopTimer)
+                    toast.addEventListener('mouseleave', Swal.resumeTimer)
+                }
+            });
+        }
+    </script>
+</body>
+</html>
