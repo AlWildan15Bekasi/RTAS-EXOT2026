@@ -306,8 +306,33 @@
                                     <p class="text-xs text-slate-500 font-medium">Daftar siswa yang belum check-in ke ruangan</p>
                                 </div>
                             </div>
-                            <span class="bg-rose-100 text-rose-700 text-sm font-bold px-4 py-1.5 rounded-full shadow-sm border border-rose-200" id="badge-absent">0 Siswa</span>
+                            <span class="bg-rose-100 text-rose-700 text-sm font-bold px-4 py-1.5 rounded-full shadow-sm border border-rose-200 transition-all" id="badge-absent">0 Siswa</span>
                         </div>
+                        
+                        <!-- FILTER SECTION -->
+                        <div class="bg-white border-b border-rose-50 px-6 py-4 flex flex-col sm:flex-row gap-4 items-center justify-between bg-slate-50/30">
+                            <div class="flex items-center gap-2 text-sm font-bold text-slate-600 whitespace-nowrap">
+                                <i class="fa-solid fa-filter text-rose-400"></i> Filter Pencarian:
+                            </div>
+                            <div class="flex flex-wrap gap-3 w-full sm:w-auto">
+                                <select id="filter-session" onchange="updateDashboard()" class="text-sm bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium focus:ring-2 focus:ring-rose-200 outline-none shadow-sm flex-1 sm:flex-none cursor-pointer">
+                                    <option value="all">Semua Sesi</option>
+                                    <!-- Options populated by JS -->
+                                </select>
+                                <select id="filter-class" onchange="updateDashboard()" class="text-sm bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium focus:ring-2 focus:ring-rose-200 outline-none shadow-sm flex-1 sm:flex-none cursor-pointer">
+                                    <option value="all">Semua Kelas</option>
+                                    <!-- Options populated by JS -->
+                                </select>
+                                <select id="filter-room" onchange="updateDashboard()" class="text-sm bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-700 font-medium focus:ring-2 focus:ring-rose-200 outline-none shadow-sm flex-1 sm:flex-none cursor-pointer">
+                                    <option value="all">Semua Ruang</option>
+                                    <!-- Options populated by JS -->
+                                </select>
+                                <button onclick="resetFilters()" class="text-sm bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 hover:text-rose-700 px-4 py-2 rounded-lg font-bold transition-colors shadow-sm flex items-center justify-center gap-1">
+                                    <i class="fa-solid fa-rotate-left"></i> Reset
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="overflow-x-auto">
                             <table class="min-w-full divide-y divide-slate-200">
                                 <thead class="bg-slate-50">
@@ -403,20 +428,17 @@
 
         // --- CORE FUNCTIONS ---
 
-        // Helper Function untuk mengubah 1899-12-30T05:23:51.000Z menjadi jam yang rapi
+        // Helper Function untuk mengubah 1899-12-30T... menjadi jam yang rapi
         function formatTimeDisplay(timeStr) {
             if (!timeStr || timeStr === '-') return '--:--:--';
             
             const str = String(timeStr);
-            // Cek apakah ini string ISO dari Google Sheets
             if (str.includes('T') && str.includes('Z')) {
                 try {
                     const d = new Date(str);
-                    // toLocaleTimeString otomatis menyesuaikan ke format lokal (WIB) yang cantik
                     const formatted = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                    return formatted.replace(/\./g, ':'); // Ganti titik menjadi titik dua jika diperlukan
+                    return formatted.replace(/\./g, ':'); 
                 } catch (e) {
-                    // Fallback jika browser gagal memproses Date
                     return str.split('T')[1].substring(0, 8);
                 }
             }
@@ -431,6 +453,42 @@
             document.getElementById('current-time').innerHTML = `<span class="font-bold text-exotBlue">${now.toLocaleTimeString('id-ID', timeOpts).replace(/\./g, ':')}</span> &bull; ${now.toLocaleDateString('id-ID', dateOpts)}`;
         }, 1000);
 
+        // Populate Dropdown Filters (Hanya dijalankan saat ada opsi baru yang belum terdaftar)
+        function populateFilters() {
+            const classSelect = document.getElementById('filter-class');
+            const sessionSelect = document.getElementById('filter-session');
+            const roomSelect = document.getElementById('filter-room');
+
+            const currentClass = classSelect.value;
+            const currentSession = sessionSelect.value;
+            const currentRoom = roomSelect.value;
+
+            // Dapatkan Data Unik dan urutkan
+            const classes = [...new Set(studentsData.map(s => s.class))].filter(v => v !== '-' && v !== '').sort();
+            const sessions = [...new Set(studentsData.map(s => s.session))].filter(v => v !== '-' && v !== '').sort();
+            const rooms = [...new Set(studentsData.map(s => s.room))].filter(v => v !== '-' && v !== '').sort();
+
+            const renderOptions = (selectElem, optionsList, defaultText, selectedValue) => {
+                selectElem.innerHTML = `<option value="all">${defaultText}</option>`;
+                optionsList.forEach(opt => {
+                    const isSelected = opt === selectedValue ? 'selected' : '';
+                    selectElem.innerHTML += `<option value="${opt}" ${isSelected}>${opt}</option>`;
+                });
+            };
+
+            renderOptions(classSelect, classes, 'Semua Kelas', currentClass);
+            renderOptions(sessionSelect, sessions, 'Semua Sesi', currentSession);
+            renderOptions(roomSelect, rooms, 'Semua Ruang', currentRoom);
+        }
+
+        // Action Reset Filter
+        function resetFilters() {
+            document.getElementById('filter-class').value = 'all';
+            document.getElementById('filter-session').value = 'all';
+            document.getElementById('filter-room').value = 'all';
+            updateDashboard(); // Render Ulang
+        }
+
         // Fetch Data from Google Sheets API
         async function fetchData() {
             try {
@@ -443,7 +501,6 @@
                 if(syncIcon) syncIcon.classList.remove('fa-spin');
 
                 if (result.status === 'success') {
-                    // Mapping data dari format Database ke format UI Siswa
                     const newData = result.data.map(row => {
                         let rowStatus = 'pending';
                         if (row.Status_Kehadiran && row.Status_Kehadiran.toString().trim() !== '') {
@@ -454,22 +511,20 @@
                             id: row.ID_Siswa || row.NIS || '-',                 
                             name: row.Nama_Siswa || '-',    
                             gender: row.Gender || '-',
-                            class: row.Kelas || '-',         
-                            room: row.Ruang_Ujian || row.Ruang || '-',
-                            session: row.Sesi_Ujian || '-',
-                            interval: row.Interval_Waktu || '-',
+                            class: String(row.Kelas || '-').trim(),         
+                            room: String(row.Ruang_Ujian || row.Ruang || '-').trim(),
+                            session: String(row.Sesi_Ujian || '-').trim(),
+                            interval: String(row.Interval_Waktu || '-').trim(),
                             status: rowStatus,
-                            time: formatTimeDisplay(row.Jam_Scan), // <- Menggunakan Helper Disini
+                            time: formatTimeDisplay(row.Jam_Scan),
                             isLate: row.Keterangan_Waktu === 'Terlambat'
                         };
                     });
 
                     studentsData = newData;
                     
-                    // Filter yang statusnya hadir
                     const currentPresent = newData.filter(t => t.status === 'hadir');
                     
-                    // Logika memunculkan pop-up hanya untuk ID yang BARU hadir
                     if (!isFirstLoad) {
                         currentPresent.forEach(student => {
                             if (!lastPresentIds.has(student.id)) {
@@ -478,15 +533,17 @@
                         });
                     }
                     
-                    // Simpan state ID hadir saat ini untuk perbandingan berikutnya
                     lastPresentIds = new Set(currentPresent.map(t => t.id));
-                    isFirstLoad = false;
-
-                    // Update UI setelah state baru beres
+                    
+                    // Populate Filters & Update
+                    populateFilters();
                     updateDashboard();
+                    
                     if(!document.getElementById('tab-attendance').classList.contains('hidden')) {
                         renderPresentTable();
                     }
+
+                    isFirstLoad = false;
                 }
             } catch (error) {
                 console.error('Error fetching data:', error);
@@ -504,26 +561,19 @@
             const inputUsername = document.getElementById('username').value;
             const inputPassword = document.getElementById('password').value;
 
-            // State Loading
             btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin text-xl"></i> Memeriksa...';
             btn.disabled = true;
             
             try {
-                // Request Login ke Apps Script
                 const response = await fetch(API_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify({ 
-                        action: 'login',
-                        username: inputUsername,
-                        password: inputPassword 
-                    })
+                    body: JSON.stringify({ action: 'login', username: inputUsername, password: inputPassword })
                 });
 
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    // Update nama Admin dari database
                     const adminNameText = result.data.nama_lengkap || 'Administrator';
                     document.getElementById('admin-name').innerText = adminNameText;
 
@@ -539,57 +589,36 @@
                     });
 
                     initDashboard();
-                    fetchData(); // Fetch pertama kali
-                    
-                    // Mulai Interval Polling setiap 5 Detik
+                    fetchData(); 
                     fetchIntervalId = setInterval(fetchData, 5000); 
-
                 } else {
-                    // Gagal Login (Salah Sandi)
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Login Gagal',
-                        text: result.message || 'Username atau Password salah!',
-                        confirmButtonColor: '#ef4444',
-                        customClass: { popup: 'rounded-2xl' }
-                    });
+                    Swal.fire({ icon: 'error', title: 'Login Gagal', text: result.message || 'Username atau Password salah!', confirmButtonColor: '#ef4444', customClass: { popup: 'rounded-2xl' } });
                 }
             } catch (error) {
                 console.error('Login Error:', error);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Koneksi Terputus',
-                    text: 'Gagal terhubung ke database. Pastikan internet aktif.',
-                    confirmButtonColor: '#ef4444',
-                    customClass: { popup: 'rounded-2xl' }
-                });
+                Swal.fire({ icon: 'error', title: 'Koneksi Terputus', text: 'Gagal terhubung ke database. Pastikan internet aktif.', confirmButtonColor: '#ef4444', customClass: { popup: 'rounded-2xl' } });
             } finally {
-                // Kembalikan tombol ke semula
                 btn.innerHTML = originalContent;
                 btn.disabled = false;
             }
         }
 
-        // Logout
         function handleLogout() {
             document.getElementById('login-screen').classList.remove('hidden');
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('dash-bg').classList.add('hidden');
             
-            // Kosongkan form login
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
 
             switchTab('home');
             
-            // Hentikan Polling saat logout
             if(fetchIntervalId) {
                 clearInterval(fetchIntervalId);
             }
-            isFirstLoad = true; // reset state
+            isFirstLoad = true;
         }
 
-        // Tabs
         function switchTab(tabName) {
             document.getElementById('tab-btn-home').classList.remove('tab-active');
             document.getElementById('tab-btn-attendance').classList.remove('tab-active');
@@ -625,17 +654,30 @@
         function updateDashboard() {
             const total = studentsData.length;
             const present = studentsData.filter(t => t.status === 'hadir');
-            // Menangkap yang pending atau yg blank statusnya
-            const absent = studentsData.filter(t => t.status === 'pending' || t.status === '');
+            const absentAll = studentsData.filter(t => t.status === 'pending' || t.status === '');
 
-            // Counter animation
+            // Counter animation (Semua Data - Tidak Terpengaruh Filter Tabel)
             animateValue("stat-present", parseInt(document.getElementById('stat-present').innerText) || 0, present.length, 500);
-            animateValue("stat-absent", parseInt(document.getElementById('stat-absent').innerText) || 0, absent.length, 500);
+            animateValue("stat-absent", parseInt(document.getElementById('stat-absent').innerText) || 0, absentAll.length, 500);
             document.getElementById('stat-total').innerText = total;
             
-            document.getElementById('badge-absent').innerText = `${absent.length} Siswa`;
+            // --- LOGIKA FILTER TABEL ABSENT ---
+            const filterClass = document.getElementById('filter-class').value;
+            const filterSession = document.getElementById('filter-session').value;
+            const filterRoom = document.getElementById('filter-room').value;
 
-            renderAbsentTable(absent);
+            const filteredAbsent = absentAll.filter(student => {
+                const matchClass = filterClass === 'all' || student.class === filterClass;
+                const matchSession = filterSession === 'all' || student.session === filterSession;
+                const matchRoom = filterRoom === 'all' || student.room === filterRoom;
+                return matchClass && matchSession && matchRoom;
+            });
+
+            // Update badge khusus yang difilter
+            const badgeText = filteredAbsent.length === absentAll.length ? `${absentAll.length} Siswa` : `${filteredAbsent.length} dari ${absentAll.length} Siswa`;
+            document.getElementById('badge-absent').innerText = badgeText;
+
+            renderAbsentTable(filteredAbsent);
             updateChartsData(present);
         }
 
@@ -657,7 +699,11 @@
             tbody.innerHTML = '';
 
             if(absentList.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-10 text-center text-slate-400 font-medium bg-slate-50"><i class="fa-regular fa-face-smile-beam text-3xl mb-2 text-emerald-400 block"></i> Alhamdulillah, semua siswa sudah hadir!</td></tr>`;
+                // Tampilan jika filter tidak menemukan data / memang sudah hadir semua
+                const isFiltered = document.getElementById('filter-class').value !== 'all' || document.getElementById('filter-session').value !== 'all' || document.getElementById('filter-room').value !== 'all';
+                const message = isFiltered ? 'Tidak ada siswa yang cocok dengan filter yang dipilih.' : 'Alhamdulillah, semua siswa sudah hadir!';
+                
+                tbody.innerHTML = `<tr><td colspan="6" class="px-6 py-12 text-center text-slate-400 font-medium bg-slate-50"><i class="fa-regular fa-face-smile-beam text-4xl mb-3 text-emerald-400 block opacity-50"></i> ${message}</td></tr>`;
                 return;
             }
 
@@ -808,7 +854,6 @@
             genderChartInstance.data.datasets[0].data = [ikhwanHadir, akhwatHadir, belumHadir];
             genderChartInstance.update();
 
-            // Kumpulkan kelas unik untuk chart batang
             const classes = [...new Set(studentsData.map(t => t.class))].filter(c => c !== '-');
             classChartInstance.data.labels = classes;
             
